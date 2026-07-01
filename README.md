@@ -39,6 +39,31 @@ The repo has two parts:
 | Native REST-API scans that outlive a session | Burp Pro REST API (Phase 3) |
 | Browse a target *through* Burp (Playwright) | `burp-browser` + Burp proxy |
 
+## This skill vs. the native Burp MCP server
+
+Phase 1 of this skill talks to the same native "MCP Server" extension you'd otherwise register
+as a standalone MCP server. The table below is about what changes when you put this skill in
+front of it, not a knock on the extension itself; it's the foundation everything else here is
+built on.
+
+| | Native Burp MCP (used directly) | Burp Autopilot Skill |
+|---|---|---|
+| Connection model | Always-on, registered as a persistent MCP client in your agent's config | On-demand: spawns a connection only when a command runs, then exits |
+| Invocation | Raw JSON-RPC tool calls; you supply the full schema each time | Deterministic CLI subcommands (`send-request`, `proxy-history-regex`, ...) with sane defaults |
+| Tool naming | Fixed to whatever the client caches at connect time | Resolved live from `list-tools` on every run, so renamed or added tools don't break it |
+| Output size | Whatever the extension returns, uncapped | Field truncation + a total output cap, tuned for an agent's context window |
+| Launching scans | Not supported; the extension can only read existing scanner issues | `scan-start` / `scan-status` via the companion extension (Pro) |
+| Scripted fuzzing | Not supported; no programmatic attack engine | `fuzz`, with per-request status/length/timing results (Community + Pro) |
+| REST API scans | Not wired up; you'd script Burp's REST API yourself | `rest-scan-start` / `rest-scan-status` subcommands (Pro) |
+| Browsing through Burp | Out of scope for an MCP server | `burp-browser`: a Playwright session routed through Burp's proxy |
+| Works without an MCP-aware client | No, needs a client that speaks MCP | Yes, it's a plain Python script; runs from a shell, a CI job, or a cron |
+| Setup | Add to your MCP client config, keep it running | `npx skills add Xavrir/burp-autopilot`, then invoke ad hoc |
+
+Where the two overlap (proxy history, Repeater staging, Collaborator, encoders, config
+export/modify), they behave the same, because it's the same extension underneath. The
+Community/Pro gating described below applies to both equally; this skill doesn't unlock
+anything the native extension wouldn't also need Pro for.
+
 ## Architecture
 
 Three layers. Only Phase 1 is required; the rest are optional.
