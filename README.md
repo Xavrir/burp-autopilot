@@ -59,6 +59,19 @@ built on.
 | Works without an MCP-aware client | No, needs a client that speaks MCP | Yes, it's a plain Python script; runs from a shell, a CI job, or a cron |
 | Setup | Add to your MCP client config, keep it running | `npx skills add Xavrir/burp-autopilot`, then invoke ad hoc |
 
+**On the output-size row specifically:** the native extension returns whatever Burp gives it,
+with no ceiling. A single `proxy-history-regex` match can carry a full request and response body,
+and Burp bodies routinely run several kilobytes each; pull back even a modest count of entries
+with no client-side limit and you can land well into six figures of bytes for one call, which is
+tens of thousands of tokens against your context. This client bounds that by construction:
+every string field longer than 1,000 characters (about 250 tokens, at the rough 4-characters-
+per-token rate people use for English/JSON text) gets truncated, and the full JSON response is
+then hard-capped at 50,000 bytes (about 12,500 tokens) before it's printed. So the real answer to
+"how much does it save" is: it turns an unbounded cost into a bounded one, worth roughly 12,500
+tokens at most per call, no matter how much traffic Burp is holding. Raise or drop those caps per
+call with `--field-cap` / `--total-cap`, or use `--raw` when you deliberately want one record in
+full.
+
 Where the two overlap (proxy history, Repeater staging, Collaborator, encoders, config
 export/modify), they behave the same, because it's the same extension underneath. The
 Community/Pro gating described below applies to both equally; this skill doesn't unlock
