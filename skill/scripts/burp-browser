@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# burp-browser - drive a Playwright Chromium THROUGH Burp's proxy, so it behaves like Burp's
+# built-in browser: every request flows into Burp's proxy history (readable via burp_client.py)
+# and gets passively scanned. Burp's embedded browser can't be automated; this is the replacement.
+#
+# Usage mirrors playwright-cli, on a dedicated session ("burp" by default):
+#   burp-browser open https://target/           # launch through Burp + navigate
+#   burp-browser snapshot                        # accessibility snapshot (refs for clicks)
+#   burp-browser click e5 / fill e3 "x" / press Enter / screenshot --filename=p.png
+#   burp-browser close
+#
+# Env:
+#   BURP_PROXY        proxy listener (default http://127.0.0.1:8080)
+#   BURP_BROWSER_SES  playwright-cli session name (default "burp")
+#   BURP_BROWSER_HEADED=0 to run headless (default headed, so you can watch it)
+set -euo pipefail
+
+PROXY="${BURP_PROXY:-http://127.0.0.1:8080}"
+SES="${BURP_BROWSER_SES:-burp}"
+CFG_DIR="${XDG_CACHE_HOME:-${HOME:?set HOME or XDG_CACHE_HOME}/.cache}/burp-autopilot"
+CFG="$CFG_DIR/pw-burp-config.json"
+
+# locate the playwright-cli binary (fall back to npx)
+if command -v playwright-cli >/dev/null 2>&1; then
+  PW_BIN=(playwright-cli)
+else
+  PW_BIN=(npx playwright-cli)
+fi
+
+# never let an ambient shell proxy override Burp routing
+unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy
+
+write_config() {
+  # constrain PROXY to safe URL chars so it can't break/inject the JSON below
+  if ! [[ "$PROXY" =~ ^(https?|socks[45]?)://[A-Za-z0-9._-]+:[0-9]{1,5}$ ]]; then
+    echo "burp-browser: invalid BURP_PROXY '$PROXY' (expected scheme://host:port)" >&2
+    exit 1
+  fi
+  mkdir -p "$CFG_DIR"
+  cat > "$CFG" <<JSON
+{
+  "browser": {
+    "browserName": "chromium",
+    "launchOptions": {
+      "proxy": { "server": "$PROXY" },
+      "args": ["--proxy-bypass-list=<-loopback>"]
+    },
+    "contextOptions": { "ignoreHTTPSErrors": true }
+  }
+}
+JSON
+}
+
+cmd="${1:-}"
+case "$cmd" in
+  ""|-h|--help)
+    sed -n '2,16p' "$0"; exit 0 ;;
+  open)
+    shift
+    write_config
+    headed=(--headed)
+    [ "${BURP_BROWSER_HEADED:-1}" = "0" ] && headed=()
+    echo "# burp-browser: launching Chromium via Burp proxy $PROXY (session '$SES')" >&2
+    exec "${PW_BIN[@]}" -s="$SES" open "$@" --config="$CFG" "${headed[@]}" ;;
+  *)
+    # forward every other subcommand to the same Burp-routed session
+    exec "${PW_BIN[@]}" -s="$SES" "$@" ;;
+esac

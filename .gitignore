@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# Extension build artifacts & fetched dependencies (pulled by fetch-deps.sh)
+extension/build/
+extension/lib/*.jar
+
+# Third-party MCP bridge (user-supplied, not redistributed)
+mcp-proxy.jar
+
+# burp-browser / Playwright runtime state
+.playwright-cli/
+*.png
+
+# Editor / OS cruft
+.DS_Store
+*.swp
+.idea/
+.vscode/
