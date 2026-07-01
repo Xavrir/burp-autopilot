@@ -1,4 +1,4 @@
-# Burp Autopilot
+# Burp Autopilot Skill
 
 **Drive Burp Suite from the command line.** It sends live requests, searches proxy history,
 runs Collaborator (OOB) checks, launches scans, and scripts fuzzing, each as a plain CLI
