@@ -15,10 +15,6 @@ mcp-proxy.jar
 .playwright-cli/
 *.png
 
-# Node
-node_modules/
-npm-debug.log*
-
 # Editor / OS cruft
 .DS_Store
 *.swp

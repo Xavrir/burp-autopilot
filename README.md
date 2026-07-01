@@ -10,10 +10,10 @@ it. That makes it easy to drop into a script, a CI job, or a coding agent's tool
 
 The repo has two parts:
 
-- `skill/` holds the agent skill (`controlling-burpsuite-autonomously`), its transport client
-  `burp_client.py`, and a wrapper that drives a browser through Burp. Load it into
-  [Claude Code](https://docs.claude.com/en/docs/claude-code) or an opencode-compatible runner,
-  or just call the client as a CLI.
+- `skills/controlling-burpsuite-autonomously/` holds the agent skill: its transport client
+  `burp_client.py`, a wrapper that drives a browser through Burp, and reference docs. Load it
+  into [Claude Code](https://docs.claude.com/en/docs/claude-code) or an opencode-compatible
+  runner, or just call the client as a CLI.
 - `extension/` is an optional companion Burp extension (`burp-autopilot-ext`, built on the
   [Montoya API](https://portswigger.github.io/burp-extensions-montoya-api/)). It adds the two
   things the native MCP extension can't do: launching scans, and a scriptable fuzzing engine.
@@ -21,7 +21,7 @@ The repo has two parts:
 > **Authorized testing only.** Burp sends real traffic to real hosts. Use it only against
 > targets you own or are explicitly authorized to test, such as an in-scope bug-bounty or
 > pentest engagement. See [SECURITY.md](SECURITY.md) and the safety gate in
-> [`skill/SKILL.md`](skill/SKILL.md).
+> [`SKILL.md`](skills/controlling-burpsuite-autonomously/SKILL.md).
 
 ---
 
@@ -44,20 +44,20 @@ The repo has two parts:
 Three layers. Only Phase 1 is required; the rest are optional.
 
 ```
-  your CLI / agent / script
-            │
-            ▼
-   skill/scripts/burp_client.py ────────────────────────────────────────┐
-            │                         │                                   │
-   (Phase 1)│ stdio↔SSE        (Phase 2)│ loopback HTTP        (Phase 3)  │ REST
-            ▼                         ▼                                   ▼
-      mcp-proxy.jar            burp-autopilot-ext.jar             Burp Pro REST API
-            │  SSE :9876              (Montoya)  :9877                    :1337
-            ▼                         ▲                                   ▲
-   Burp "MCP Server" ext ────────────┘───────────────────────────────────┘
-      (27 live tools)            scan-start / scan-status / fuzz
+   your CLI / agent / script
+             │
+             ▼
+   burp_client.py  ───────────────┬─────────────────────────┐
+        │ (Phase 1)                │ (Phase 2)                │ (Phase 3)
+        │ stdio↔SSE                │ loopback HTTP            │ REST
+        ▼                          ▼                          ▼
+   mcp-proxy.jar            burp-autopilot-ext.jar     Burp Pro REST API
+        │ SSE :9876               (Montoya) :9877           :1337
+        ▼                          ▲                          ▲
+   Burp "MCP Server" ext  ─────────┴──────────────────────────┘
+      (27 live tools)         scan-start / scan-status / fuzz
 
-   burp-browser → Playwright Chromium ──proxy :8080──▶ Burp (history + passive scan)
+   burp-browser → Playwright Chromium ──(proxy :8080)──▶ Burp (history + passive scan)
 ```
 
 - Phase 1 is the core. `burp_client.py` spawns `mcp-proxy.jar` (a stdio↔SSE bridge) and speaks
@@ -87,40 +87,37 @@ For the full design and where it stops, see [`docs/architecture.md`](docs/archit
 
 ## Install
 
-### Quickest: npx
+### With `npx skills` (recommended)
 
-Drop the skill into your harness's skills folder with one command. This runs straight from
-GitHub, so there's nothing to clone or publish:
-
-```bash
-npx github:Xavrir/burp-autopilot
-```
-
-It copies the skill into `~/.claude/skills/controlling-burpsuite-autonomously`. Options:
+Install with the [`skills`](https://github.com/vercel-labs/skills) package manager, the same
+tool behind the [skills.sh](https://www.skills.sh) directory. One command:
 
 ```bash
-npx github:Xavrir/burp-autopilot --dir ~/.config/opencode/skill   # a different skills folder
-npx github:Xavrir/burp-autopilot --force                          # overwrite an existing install
-SKILLS_DIR=/some/where npx github:Xavrir/burp-autopilot           # or set the folder via env
+npx skills add Xavrir/burp-autopilot
 ```
 
-The installer only handles the skill (the Python client and references). The companion
-extension needs a Java build and a manual load into Burp, covered below.
+It fetches this repo, finds the skill, and drops it where your agent looks (Claude Code,
+opencode, and others). Related commands:
+
+```bash
+npx skills use Xavrir/burp-autopilot    # try it without installing
+npx skills list                          # show what's installed
+```
+
+This installs the skill only (the Python client and references). The companion extension needs
+a Java build and a manual load into Burp, covered below.
 
 ### Or paste a prompt into your agent
 
-If you'd rather let your CLI agent do it, paste this in:
+If you'd rather let your CLI agent set it up, paste this in:
 
 ```text
-Install the Burp Autopilot skill for me. Run:
+Install the Burp Autopilot skill for me by running:
 
-    npx github:Xavrir/burp-autopilot
+    npx skills add Xavrir/burp-autopilot
 
-That copies the skill into ~/.claude/skills/controlling-burpsuite-autonomously. If npx or Node
-isn't available, instead: clone https://github.com/Xavrir/burp-autopilot and copy its skill/
-directory to ~/.claude/skills/controlling-burpsuite-autonomously (the folder name must stay
-exactly that). Then confirm SKILL.md is in place. Do not send any live Burp traffic until I
-give you an authorized, in-scope target.
+Then confirm the controlling-burpsuite-autonomously skill shows up (npx skills list). Do not
+send any live Burp traffic until I give you an authorized, in-scope target.
 ```
 
 ### Manual
@@ -128,13 +125,13 @@ give you an authorized, in-scope target.
 ```bash
 git clone https://github.com/Xavrir/burp-autopilot.git
 cd burp-autopilot
-./install.sh          # symlinks skill/ -> ~/.claude/skills/controlling-burpsuite-autonomously
+./install.sh          # symlinks the skill into ~/.claude/skills/
 ```
 
-Or skip installing entirely and run the client from the clone:
+Or skip installing and run the client straight from the clone:
 
 ```bash
-python3 skill/scripts/burp_client.py ping
+python3 skills/controlling-burpsuite-autonomously/scripts/burp_client.py ping
 ```
 
 ### Companion extension (optional, for scans + fuzzing)
@@ -151,7 +148,8 @@ Then in Burp, go to **Extensions ▸ Installed ▸ Add ▸ Java** and select
 ## Quickstart
 
 ```bash
-C="python3 skill/scripts/burp_client.py"
+cd skills/controlling-burpsuite-autonomously   # or your installed skill dir
+C="python3 scripts/burp_client.py"
 
 # 1. Preflight: is Burp up with the MCP Server extension?
 $C ping

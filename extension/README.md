@@ -31,7 +31,7 @@ See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 Verify from the client:
 
 ```bash
-python3 ../skill/scripts/burp_client.py autopilot-health
+python3 ../skills/controlling-burpsuite-autonomously/scripts/burp_client.py autopilot-health
 ```
 
 > Scanning (`scan-start` / `scan-status`) requires **Burp Suite Pro** — Community has no

@@ -1,14 +1,14 @@
 # Architecture
 
 Burp Autopilot layers three independent transports on top of Burp Suite, coordinated by a
-single Python client (`skill/scripts/burp_client.py`). Each phase is optional beyond Phase 1,
-and each targets a different Burp capability.
+single Python client (`skills/controlling-burpsuite-autonomously/scripts/burp_client.py`). Each
+phase is optional beyond Phase 1, and each targets a different Burp capability.
 
 ```
   your CLI / agent / script
             │
             ▼
-   skill/scripts/burp_client.py
+   burp_client.py
     │            │             │
     │ Phase 1    │ Phase 2     │ Phase 3
     │ stdio↔SSE  │ HTTP JSON   │ REST
@@ -65,7 +65,7 @@ Phase 1.
 
 ## `burp-browser` — Playwright as the Burp browser
 
-Burp's embedded Chromium cannot be automated. `skill/scripts/burp-browser` instead drives a
+Burp's embedded Chromium cannot be automated. The skill's `scripts/burp-browser` instead drives a
 **Playwright Chromium through Burp's proxy** (`127.0.0.1:8080`), so every request lands in
 Burp's proxy history and passive scan. This unlocks the full loop:
 **browse → Burp captures → triage (`proxy-history`/`scanner-issues`) → `scan-start` → `fuzz`.**

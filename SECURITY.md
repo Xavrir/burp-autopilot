@@ -10,7 +10,7 @@ Unauthorized scanning, fuzzing, or exploitation of systems you do not have permi
 is illegal in most jurisdictions. You are solely responsible for how you use this software.
 
 The skill enforces a safety gate before any live action (see the "Scope & safety" section of
-[`skill/SKILL.md`](skill/SKILL.md)):
+[`SKILL.md`](skills/controlling-burpsuite-autonomously/SKILL.md)):
 
 - Confirm an explicit, in-scope target before every live request, scan, or fuzz.
 - Honor each program's accepted-risk rules, rate limits, and excluded paths.

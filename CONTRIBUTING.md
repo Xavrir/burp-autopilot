@@ -5,16 +5,19 @@ Thanks for your interest in improving Burp Autopilot. Issues and pull requests a
 ## Repo layout
 
 ```
-skill/        the agent skill: SKILL.md + burp_client.py + burp-browser + references/
-extension/    the companion Burp (Montoya) extension: Java source + build scripts
-docs/         architecture and design notes
-install.sh    links skill/ into ~/.claude/skills/
+skills/controlling-burpsuite-autonomously/   the agent skill: SKILL.md + scripts/ + references/
+extension/                                    companion Burp (Montoya) extension: Java + build scripts
+docs/                                         architecture and design notes
+install.sh                                    links the skill into ~/.claude/skills/
 ```
+
+The skill lives under `skills/<name>/` so the [`skills`](https://github.com/vercel-labs/skills)
+package manager (`npx skills add`) discovers it.
 
 ## Development setup
 
-- **Client (`skill/scripts/burp_client.py`)** — Python 3.8+, standard library only. No
-  dependencies to install. Run `python3 skill/scripts/burp_client.py --help`.
+- **Client (`skills/controlling-burpsuite-autonomously/scripts/burp_client.py`)** — Python 3.8+,
+  standard library only. No dependencies to install. Run it with `--help` to see the subcommands.
 - **Extension** — JDK 21+. From `extension/`, run `./fetch-deps.sh` once to pull the build
   dependencies from Maven Central, then `./build.sh` to produce
   `extension/build/burp-autopilot-ext.jar`. Load it into Burp via

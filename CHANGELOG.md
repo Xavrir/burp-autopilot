@@ -9,7 +9,7 @@ All notable changes to this project are documented here. The format is based on
 Initial public release.
 
 ### Added
-- **Phase 1 — MCP transport** (`skill/scripts/burp_client.py`): drives Burp's native
+- **Phase 1 — MCP transport** (`burp_client.py`): drives Burp's native
   "MCP Server" extension via a stdio↔SSE bridge, with a stdlib-only direct-SSE fallback. Live
   tool resolution (no hardcoded tool names) and built-in output-size discipline. Convenience
   subcommands for live HTTP/1.1 + HTTP/2 requests, proxy/WebSocket history search, Collaborator

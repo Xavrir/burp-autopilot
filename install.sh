@@ -8,8 +8,8 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")" && pwd)"
-SRC="$REPO/skill"
 NAME="controlling-burpsuite-autonomously"
+SRC="$REPO/skills/$NAME"
 SKILLS_DIR="${SKILLS_DIR:-$HOME/.claude/skills}"
 DEST="$SKILLS_DIR/$NAME"
 
