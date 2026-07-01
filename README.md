@@ -87,26 +87,54 @@ For the full design and where it stops, see [`docs/architecture.md`](docs/archit
 
 ## Install
 
+### Quickest: npx
+
+Drop the skill into your harness's skills folder with one command. This runs straight from
+GitHub, so there's nothing to clone or publish:
+
+```bash
+npx github:Xavrir/burp-autopilot
+```
+
+It copies the skill into `~/.claude/skills/controlling-burpsuite-autonomously`. Options:
+
+```bash
+npx github:Xavrir/burp-autopilot --dir ~/.config/opencode/skill   # a different skills folder
+npx github:Xavrir/burp-autopilot --force                          # overwrite an existing install
+SKILLS_DIR=/some/where npx github:Xavrir/burp-autopilot           # or set the folder via env
+```
+
+The installer only handles the skill (the Python client and references). The companion
+extension needs a Java build and a manual load into Burp, covered below.
+
+### Or paste a prompt into your agent
+
+If you'd rather let your CLI agent do it, paste this in:
+
+```text
+Install the Burp Autopilot skill for me. Run:
+
+    npx github:Xavrir/burp-autopilot
+
+That copies the skill into ~/.claude/skills/controlling-burpsuite-autonomously. If npx or Node
+isn't available, instead: clone https://github.com/Xavrir/burp-autopilot and copy its skill/
+directory to ~/.claude/skills/controlling-burpsuite-autonomously (the folder name must stay
+exactly that). Then confirm SKILL.md is in place. Do not send any live Burp traffic until I
+give you an authorized, in-scope target.
+```
+
+### Manual
+
 ```bash
 git clone https://github.com/Xavrir/burp-autopilot.git
 cd burp-autopilot
+./install.sh          # symlinks skill/ -> ~/.claude/skills/controlling-burpsuite-autonomously
 ```
 
-### As a CLI
-
-Nothing to install. Run the client directly:
+Or skip installing entirely and run the client from the clone:
 
 ```bash
 python3 skill/scripts/burp_client.py ping
-```
-
-### As an agent skill
-
-Symlink `skill/` into your skills folder. The link name has to match the skill's `name:`
-frontmatter:
-
-```bash
-./install.sh          # links skill/ -> ~/.claude/skills/controlling-burpsuite-autonomously
 ```
 
 ### Companion extension (optional, for scans + fuzzing)

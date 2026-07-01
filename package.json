@@ -1,0 +1,38 @@
+{
+  "name": "burp-autopilot-skill",
+  "version": "0.1.0",
+  "description": "Installer for the Burp Autopilot skill: drive Burp Suite from the command line via an MCP-transport client and a companion Montoya extension.",
+  "bin": {
+    "burp-autopilot-skill": "bin/install.js"
+  },
+  "files": [
+    "bin/",
+    "skill/",
+    "docs/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "keywords": [
+    "burp-suite",
+    "security",
+    "pentest",
+    "web-security",
+    "mcp",
+    "fuzzing",
+    "skill",
+    "claude-code"
+  ],
+  "homepage": "https://github.com/Xavrir/burp-autopilot#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Xavrir/burp-autopilot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Xavrir/burp-autopilot/issues"
+  },
+  "author": "Rizky Mirzaviandy Priambodo",
+  "license": "MIT"
+}
