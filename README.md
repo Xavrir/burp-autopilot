@@ -1,28 +1,26 @@
 # Burp Autopilot
 
-**Drive Burp Suite autonomously from the command line** — send live requests, search
-proxy history, run Collaborator (OOB) checks, launch scans, and script fuzzing, all as
-deterministic CLI subcommands you can chain into automated web-security workflows.
+**Drive Burp Suite from the command line.** It sends live requests, searches proxy history,
+runs Collaborator (OOB) checks, launches scans, and scripts fuzzing, each as a plain CLI
+subcommand you can chain into a web-security workflow.
 
-Burp Autopilot is an **on-demand alternative to an always-on Burp MCP server**. Instead of
-registering a persistent MCP client, you invoke one small Python client that speaks to Burp
-only when you need it — which makes it easy to compose into scripts, CI, or an AI coding
-agent's tool loop.
+It's an on-demand alternative to running an always-on Burp MCP server. Instead of registering a
+persistent MCP client, you call one small Python client that talks to Burp only when you need
+it. That makes it easy to drop into a script, a CI job, or a coding agent's tool loop.
 
-It ships as two parts in one repo:
+The repo has two parts:
 
-- **`skill/`** — an agent skill (`controlling-burpsuite-autonomously`) plus its transport
-  client `burp_client.py` and a Playwright-through-Burp browser wrapper. Loadable by
-  [Claude Code](https://docs.claude.com/en/docs/claude-code) / opencode-compatible skill
-  runners, or usable as a plain CLI.
-- **`extension/`** — an optional companion Burp extension (`burp-autopilot-ext`, built on the
-  [Montoya API](https://portswigger.github.io/burp-extensions-montoya-api/)) that adds the two
-  things the native MCP extension can't do: **launching scans** and a **programmatic fuzzing
-  engine**.
+- `skill/` holds the agent skill (`controlling-burpsuite-autonomously`), its transport client
+  `burp_client.py`, and a wrapper that drives a browser through Burp. Load it into
+  [Claude Code](https://docs.claude.com/en/docs/claude-code) or an opencode-compatible runner,
+  or just call the client as a CLI.
+- `extension/` is an optional companion Burp extension (`burp-autopilot-ext`, built on the
+  [Montoya API](https://portswigger.github.io/burp-extensions-montoya-api/)). It adds the two
+  things the native MCP extension can't do: launching scans, and a scriptable fuzzing engine.
 
-> ⚠️ **Authorized testing only.** Burp sends real traffic to real hosts. Use this exclusively
-> against targets you own or are explicitly authorized to test (e.g. an in-scope bug-bounty or
-> pentest engagement). See [SECURITY.md](SECURITY.md) and the safety gate in
+> **Authorized testing only.** Burp sends real traffic to real hosts. Use it only against
+> targets you own or are explicitly authorized to test, such as an in-scope bug-bounty or
+> pentest engagement. See [SECURITY.md](SECURITY.md) and the safety gate in
 > [`skill/SKILL.md`](skill/SKILL.md).
 
 ---
@@ -36,14 +34,14 @@ It ships as two parts in one repo:
 | Generate & poll Burp Collaborator (OOB) payloads | Native MCP extension |
 | Read scanner issues, toggle intercept, export/modify config | Native MCP extension |
 | Encode/decode (URL, base64) | Native MCP extension |
-| **Launch active audits & crawls, poll status** | Companion extension (Phase 2) |
-| **Scripted fuzzing with machine-readable per-request results** | Companion extension |
+| Launch active audits & crawls, poll status | Companion extension (Phase 2) |
+| Scripted fuzzing with machine-readable per-request results | Companion extension |
 | Native REST-API scans that outlive a session | Burp Pro REST API (Phase 3) |
 | Browse a target *through* Burp (Playwright) | `burp-browser` + Burp proxy |
 
 ## Architecture
 
-Three layers, each optional beyond Phase 1:
+Three layers. Only Phase 1 is required; the rest are optional.
 
 ```
   your CLI / agent / script
@@ -62,29 +60,30 @@ Three layers, each optional beyond Phase 1:
    burp-browser → Playwright Chromium ──proxy :8080──▶ Burp (history + passive scan)
 ```
 
-- **Phase 1** is the core: `burp_client.py` spawns `mcp-proxy.jar` (a stdio↔SSE bridge) and
-  speaks JSON-RPC to Burp's built-in **MCP Server** extension. Tool names are resolved *live*
-  from the extension, never hardcoded.
-- **Phase 2** adds the companion extension for scan launching and fuzzing over a separate
-  loopback endpoint.
-- **Phase 3** wires Burp's native REST API as an alternative scan path.
+- Phase 1 is the core. `burp_client.py` spawns `mcp-proxy.jar` (a stdio↔SSE bridge) and speaks
+  JSON-RPC to Burp's built-in MCP Server extension. Tool names are resolved *live* from the
+  extension rather than hardcoded, so the client survives extension updates.
+- Phase 2 adds the companion extension for scan launching and fuzzing over a separate loopback
+  endpoint.
+- Phase 3 wires Burp's native REST API as an alternative scan path.
 
-See [`docs/architecture.md`](docs/architecture.md) for the full design and its honest ceiling.
+For the full design and where it stops, see [`docs/architecture.md`](docs/architecture.md).
 
 ## Prerequisites
 
-- **Burp Suite** with the built-in **"MCP Server"** extension enabled (Settings ▸ enable the
-  MCP server; loopback SSE `127.0.0.1:9876`). **Community or Pro** — but note the
-  [edition matrix](#burp-edition-community-vs-pro) below: Community covers request/proxy/encoder
-  features and Playwright-through-Burp, while **scanning, Collaborator (OOB), and the REST API
-  are Pro-only**.
-- **`mcp-proxy.jar`** — a stdio↔SSE bridge for the MCP endpoint (user-supplied; see
-  [Obtaining mcp-proxy.jar](#obtaining-mcp-proxyjar)). Point the client at it with
+- Burp Suite with the built-in "MCP Server" extension enabled (Settings, then turn on the MCP
+  server; loopback SSE `127.0.0.1:9876`). Community or Pro both work, but read the
+  [edition matrix](#burp-edition-community-vs-pro) first: Community covers the request, proxy,
+  and encoder features plus Playwright-through-Burp, while scanning, Collaborator (OOB), and the
+  REST API need Pro.
+- `mcp-proxy.jar`, a stdio↔SSE bridge for the MCP endpoint. You supply this yourself (see
+  [Obtaining mcp-proxy.jar](#obtaining-mcp-proxyjar)) and point the client at it with
   `BURP_MCP_PROXY_JAR`.
-- **Java 17+** (JDK 21 recommended — required to *build* the companion extension).
-- **Python 3.8+** — standard library only, no `pip install` needed.
-- *(Optional, for `burp-browser`)* [`playwright-cli`](https://github.com/microsoft/playwright)
-  and `playwright-cli install-browser chromium`.
+- Java 17+. Building the companion extension needs JDK 21.
+- Python 3.8+. The client uses the standard library only, so there is nothing to `pip install`.
+- Optional, only for `burp-browser`:
+  [`playwright-cli`](https://github.com/microsoft/playwright) and
+  `playwright-cli install-browser chromium`.
 
 ## Install
 
@@ -95,7 +94,7 @@ cd burp-autopilot
 
 ### As a CLI
 
-No install step — run the client directly:
+Nothing to install. Run the client directly:
 
 ```bash
 python3 skill/scripts/burp_client.py ping
@@ -103,8 +102,8 @@ python3 skill/scripts/burp_client.py ping
 
 ### As an agent skill
 
-Symlink the `skill/` directory into your skills folder (the link name **must** match the
-skill's `name:` frontmatter):
+Symlink `skill/` into your skills folder. The link name has to match the skill's `name:`
+frontmatter:
 
 ```bash
 ./install.sh          # links skill/ -> ~/.claude/skills/controlling-burpsuite-autonomously
@@ -118,7 +117,7 @@ cd extension
 ./build.sh            # -> extension/build/burp-autopilot-ext.jar
 ```
 
-Then in Burp: **Extensions ▸ Installed ▸ Add ▸ Java**, select
+Then in Burp, go to **Extensions ▸ Installed ▸ Add ▸ Java** and select
 `extension/build/burp-autopilot-ext.jar`. See [`extension/README.md`](extension/README.md).
 
 ## Quickstart
@@ -126,7 +125,7 @@ Then in Burp: **Extensions ▸ Installed ▸ Add ▸ Java**, select
 ```bash
 C="python3 skill/scripts/burp_client.py"
 
-# 1. Preflight — is Burp up with the MCP Server extension?
+# 1. Preflight: is Burp up with the MCP Server extension?
 $C ping
 
 # 2. Discover the live tool surface (source of truth; never hardcode tool names)
@@ -161,47 +160,47 @@ $C scan-status --task-id all
 
 ## Burp edition: Community vs Pro
 
-Burp Autopilot runs against whatever your Burp edition exposes. Most transport and
-request-level features work on **Community**; the value-add layer is **Pro-gated** because
-those engines don't ship in Community.
+Burp Autopilot runs against whatever your edition of Burp exposes. Most of the transport and
+request-level features work on Community. The scanning layer needs Pro, because those engines
+don't ship in Community at all.
 
 | Feature | Community | Pro |
 |---|:---:|:---:|
-| `send-request` / `send-request-http2`, Repeater staging | ✅ | ✅ |
-| Proxy / WebSocket history + regex search | ✅ | ✅ |
-| Intercept toggle, encoders, config export/modify | ✅ | ✅ |
-| `burp-browser` (Playwright through the proxy) | ✅ | ✅ |
-| Scripted `fuzz` (companion extension, sends via HTTP API) | ✅¹ | ✅ |
-| **Active/passive Scanner** — `scan-start`, `scan-status`, `scanner-issues` | ❌ | ✅ |
-| **Burp Collaborator (OOB)** — `collab-generate`, `collab-poll` | ❌ | ✅ |
-| **REST API scans** — `rest-scan-start`, `rest-scan-status` | ❌ | ✅ |
-| Native **Intruder** attack engine | ⏳ throttled | ✅ |
+| `send-request` / `send-request-http2`, Repeater staging | Yes | Yes |
+| Proxy / WebSocket history + regex search | Yes | Yes |
+| Intercept toggle, encoders, config export/modify | Yes | Yes |
+| `burp-browser` (Playwright through the proxy) | Yes | Yes |
+| Scripted `fuzz` (companion extension, sends via HTTP API) | Yes¹ | Yes |
+| Active/passive scanner (`scan-start`, `scan-status`, `scanner-issues`) | No | Yes |
+| Burp Collaborator / OOB (`collab-generate`, `collab-poll`) | No | Yes |
+| REST API scans (`rest-scan-start`, `rest-scan-status`) | No | Yes |
+| Native Intruder attack engine | Throttled | Yes |
 
-¹ The companion `fuzz` engine issues requests via the Montoya HTTP API, so it is **not** subject
-to Community's Intruder time-throttle. Keep payload sets small and set `delayMs` regardless.
+¹ The companion `fuzz` engine sends requests through the Montoya HTTP API, so Community's
+Intruder time-throttle doesn't apply to it. Keep payload sets small and set `delayMs` anyway.
 
-> One caveat worth verifying in your setup: the native **"MCP Server" extension** (the Phase 1
-> transport) must load in your edition. If `ping` fails on Community, that extension — not this
-> tool — is the blocker.
+> One thing worth checking in your own setup: the native "MCP Server" extension (the Phase 1
+> transport) has to load in your edition. If `ping` fails on Community, that extension is the
+> blocker, not this tool.
 
 ## Obtaining `mcp-proxy.jar`
 
-`mcp-proxy.jar` is a generic stdio↔SSE MCP bridge and is **not** redistributed here. Provide
-your own build/download, place it anywhere, and point `BURP_MCP_PROXY_JAR` at it. As a
-fallback, `burp_client.py` can also talk to the Burp SSE endpoint directly over the Python
-standard library when no bridge jar is configured.
+`mcp-proxy.jar` is a generic stdio↔SSE MCP bridge, and it isn't shipped in this repo. Build or
+download your own, put it anywhere, and point `BURP_MCP_PROXY_JAR` at it. If you don't configure
+a bridge jar, `burp_client.py` falls back to talking to the Burp SSE endpoint directly with the
+Python standard library.
 
-## Limits (in the interest of honesty)
+## Limits
 
-Programmatic control is bounded by Burp's Montoya + REST surfaces. **Unreachable by any tool:**
-DOM Invader, the embedded Chromium browser, BApp/extension management, and GUI-only dialogs.
-The GUI Intruder attack engine is not fully programmable — the companion extension reimplements
-attacks via the HTTP API instead. "Autonomous" means the full Montoya + REST surface, not
-literally every GUI click.
+What you can automate is whatever the Montoya and REST APIs expose. A few things stay out of
+reach for any tool: DOM Invader, the embedded Chromium browser, BApp and extension management,
+and GUI-only dialogs. The GUI Intruder attack engine isn't fully scriptable either, which is why
+the companion extension rebuilds fuzzing on top of the HTTP API. So "autonomous" here means the
+whole Montoya plus REST surface, not literally every click in the GUI.
 
 ## Contributing
 
-Issues and PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
+Issues and PRs are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
